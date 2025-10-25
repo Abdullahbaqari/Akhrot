@@ -3,7 +3,7 @@ A small-batch ecommerce frontend built with HTML, CSS, and JavaScript.
 Currently improving the checkout logic — form validation and success message.
 
 ## Demo
-![preview](akhrotwebsite/website/screenshot.png)
+![preview](website/screenshot.png)
 
 ## Run Locally
 1. Download the repo
