@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Akhrot -Order Management System</title>
+  <style>
+    /* -------------------------------------------
+       Akhrot Order Management 
+       ------------------------------------------- */
+    :root{--brand:#7b4f2b;--muted:#666;--bg:#f7f7f7}
+    *{box-sizing:border-box}
+    body
+    {font-family:Inter, system-ui, Arial; margin:0;background:var(--bg);color:#222}
+    header{background:linear-gradient(90deg,var(--brand),#a17255);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+    header h1{font-size:1.05rem;margin:0}
+    .container{max-width:1100px;margin:20px auto;padding:0 16px}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 6px 20px rgba(10,10,10,0.04)}
+    .products .product{display:flex;gap:10px;padding:10px;border-bottom:1px solid #eee}
+    .product img{width:72px;height:72px;object-fit:cover;border-radius:8px}
+    .product .meta{flex:1}
+    .product h3{margin:0;font-size:0.95rem}
+    .product p{margin:6px 0 0;color:var(--muted);font-size:0.85rem}
+    .product .actions{display:flex;align-items:center;gap:8px}
+    button{background:var(--brand);color:#fff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+    button.ghost{background:transparent;color:var(--brand);border:1px solid #e6d7c9}
+    .cart-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #eee}
+    .cart-item small{color:var(--muted)}
+    form .row{display:flex;gap:8px}
+    input, select, textarea{padding:8px;border-radius:8px;border:1px solid #ddd;width:100%}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;font-size:0.9rem}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .search{flex:1}
+    .muted{color:var(--muted);font-size:0.9rem}
+    @media(max-width:880px){.grid{grid-template-columns:1fr} .container{padding:12px}}
+  </style>
+</head>
+<body>
+  <script>
+  const password = prompt("Enter Admin Password:");
+  if (password !== "akhrot123") {
+    alert("Access Denied!");
+    document.body.innerHTML = "<h2>Unauthorized Access</h2>";
+  }
+</script>
+
+  <header>
+    <h1>Akhrot —Order Management System</h1>
+    <div class="muted">Demo • LocalStorage • HTML/CSS/JS</div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <!-- LEFT: Products + Orders -->
+      <section>
+        <div class="card products">
+          <h2>Products</h2>
+          <div class="controls">
+            <input id="productSearch" class="search" placeholder="Search products (e.g. walnut, apple, dry fruit)" />
+            <button id="resetProducts" class="ghost">Reset</button>
+          </div>
+          <div id="productsList"></div>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="card">
+          <h2>Orders</h2>
+          <div class="controls">
+            <input id="orderSearch" class="search" placeholder="Search orders by customer or id" />
+            <select id="statusFilter"><option value="all">All statuses</option><option>Pending</option><option>Processing</option><option>Shipped</option><option>Completed</option></select>
+            <button id="exportCsv">Export CSV</button>
+          </div>
+          <div id="ordersList"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Cart & Checkout -->
+      <aside>
+        <div class="card">
+          <h2>Cart</h2>
+          <div id="cartList"><p class="muted">Cart is empty — add products to start an order.</p></div>
+
+          <div style="height:10px"></div>
+
+          <form id="checkoutForm">
+            <h3 class="muted">Customer details</h3>
+            <input id="custName" placeholder="Full name" required />
+            <input id="custPhone" placeholder="Phone" required />
+            <input id="custAddress" placeholder="Address" required />
+            <div style="height:8px"></div>
+            <div style="display:flex;gap:8px">
+              <button type="submit">Create Order</button>
+              <button type="button" id="clearCart" class="ghost">Clear Cart</button>
+            </div>
+          </form>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="card">
+          <h2>Quick Actions</h2>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button id="seedProducts" class="ghost">Seed Sample Products</button>
+            <button id="clearAll" class="ghost">Clear All Orders & Data</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    /* --------------------------------------------------
+       Step-by-step JavaScript (read comments numbered)
+       This file implements a simple client-side OMS
+       Persisted via localStorage for learning / demo
+       -------------------------------------------------- */
+
+    // ---------- Step 1: Data model & localStorage helpers ----------
+    const LS_KEYS = { products: 'akhrot_products_v1', orders: 'akhrot_orders_v1' };
+
+    function saveToLS(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+    function loadFromLS(key, fallback){ try{ const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; }catch(e){ return fallback; } }
+
+    // ---------- Step 2: Sample products (you can replace with backend later) ----------
+    const sampleProducts = [
+      {id: 'P-001', name:'Kernels (Walnut)', price:450, unit:'kg', img:'https://images.unsplash.com/photo-1604908177522-31b5ea3a3a16?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder'},
+      {id: 'P-002', name:'Akhrot Mix - Small Jar', price:220, unit:'jar', img:'https://images.unsplash.com/photo-1614866649945-65d1c2f1b9f6?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder'},
+      {id: 'P-003', name:'Dried Apricot Pack', price:350, unit:'pack', img:'https://images.unsplash.com/photo-1604908177522-31b5ea3a3a16?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder'},
+    ];
+
+    // ---------- Step 3: Application state ----------
+    let PRODUCTS = loadFromLS(LS_KEYS.products, sampleProducts.slice());
+    let ORDERS = loadFromLS(LS_KEYS.orders, []);
+    let CART = {}; // { productId: qty }
+
+    // ---------- Step 4: Render functions for UI ----------
+    const el = id => document.getElementById(id);
+
+    function renderProducts(filter=''){
+      const container = el('productsList');
+      const q = filter.trim().toLowerCase();
+      if(!PRODUCTS.length){ container.innerHTML = '<p class="muted">No products available. Use "Seed Sample Products" to add demo items.</p>'; return; }
+      container.innerHTML = PRODUCTS.filter(p => (p.name+p.id).toLowerCase().includes(q)).map(p => `
+        <div class="product">
+          <img src="${p.img}" alt="${p.name}" />
+          <div class="meta">
+            <h3>${p.name}</h3>
+            <p class="muted">${p.id} • ${p.unit} • Rs ${p.price}</p>
+          </div>
+          <div class="actions">
+            <input type="number" min="1" value="1" id="qty_${p.id}" style="width:72px;padding:6px;border-radius:8px;border:1px solid #ddd"/>
+            <button onclick="addToCart('${p.id}')">Add</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCart(){
+      const container = el('cartList');
+      const ids = Object.keys(CART);
+      if(ids.length===0){ container.innerHTML = '<p class="muted">Cart is empty — add products to start an order.</p>'; return; }
+      const rows = ids.map(id => {
+        const p = PRODUCTS.find(x=>x.id===id);
+        const qty = CART[id];
+        const subtotal = (p.price * qty).toFixed(0);
+        return `
+          <div class="cart-item">
+            <div><strong>${p.name}</strong><br/><small>${p.id} • ${qty} x Rs ${p.price}</small></div>
+            <div style="text-align:right">
+              <div>Rs ${subtotal}</div>
+              <div style="margin-top:6px"><button class="ghost" onclick="decreaseQty('${id}')">-</button><button style="margin-left:6px" class="ghost" onclick="increaseQty('${id}')">+</button><button style="margin-left:6px" class="ghost" onclick="removeFromCart('${id}')">Remove</button></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      const total = Object.keys(CART).reduce((s,id)=>{
+        const p = PRODUCTS.find(x=>x.id===id); return s + (p.price * CART[id]);
+      },0);
+      container.innerHTML = rows + `<div style="padding:8px 0"><strong>Total: Rs ${total.toFixed(0)}</strong></div>`;
+    }
+
+    function renderOrders(filterText='', status='all'){
+      const container = el('ordersList');
+      const q = filterText.trim().toLowerCase();
+      let list = ORDERS.slice().reverse(); // show newest first
+      if(status !== 'all'){ list = list.filter(o => o.status === status); }
+      if(q) list = list.filter(o => (o.id+o.customer.name+o.customer.phone).toLowerCase().includes(q));
+      if(!list.length){ container.innerHTML = '<p class="muted">No orders match the filter.</p>'; return; }
+      container.innerHTML = `
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total (Rs)</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${list.map(o => `
+              <tr>
+                <td>${o.id}<br/><small class="muted">${new Date(o.created).toLocaleString()}</small></td>
+                <td>${o.customer.name}<br/><small class="muted">${o.customer.phone}</small></td>
+                <td>${o.items.map(i=>`${i.name} x${i.qty}`).join('<br/>')}</td>
+                <td>Rs ${o.total.toFixed(0)}</td>
+                <td>
+                  <select onchange="updateOrderStatus('${o.id}', this.value)">
+                    <option ${o.status==='Pending'?'selected':''}>Pending</option>
+                    <option ${o.status==='Processing'?'selected':''}>Processing</option>
+                    <option ${o.status==='Shipped'?'selected':''}>Shipped</option>
+                    <option ${o.status==='Completed'?'selected':''}>Completed</option>
+                  </select>
+                </td>
+                <td>
+                  <button onclick="viewOrder('${o.id}')">View</button>
+                  <button class="ghost" onclick="deleteOrder('${o.id}')">Delete</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ---------- Step 5: Cart manipulation ----------
+    function addToCart(productId){
+      const qtyInput = document.getElementById(`qty_${productId}`);
+      const qty = Math.max(1, parseInt(qtyInput?.value || '1'));
+      CART[productId] = (CART[productId] || 0) + qty;
+      renderCart();
+    }
+    window.addToCart = addToCart;
+
+    function removeFromCart(productId){ delete CART[productId]; renderCart(); }
+    window.removeFromCart = removeFromCart;
+    function increaseQty(id){ CART[id] = (CART[id] || 0) + 1; renderCart(); }
+    function decreaseQty(id){ CART[id] = Math.max(1, (CART[id]||1) - 1); renderCart(); }
+    window.increaseQty = increaseQty; window.decreaseQty = decreaseQty;
+
+    // ---------- Step 6: Checkout -> create order ----------
+    function generateOrderId(){ return 'O-' + Math.random().toString(36).slice(2,9).toUpperCase(); }
+
+    document.getElementById('checkoutForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      if(Object.keys(CART).length===0){ alert('Cart is empty'); return; }
+      const customer = { name: el('custName').value.trim(), phone: el('custPhone').value.trim(), address: el('custAddress').value.trim() };
+      if(!customer.name || !customer.phone){ alert('Please provide customer name and phone'); return; }
+      const items = Object.keys(CART).map(id => { const p=PRODUCTS.find(x=>x.id===id); return { id:p.id, name:p.name, price:p.price, qty:CART[id] }; });
+      const total = items.reduce((s,i)=>s + i.price * i.qty, 0);
+      const order = { id: generateOrderId(), customer, items, total, created: Date.now(), status: 'Pending' };
+      ORDERS.push(order); saveToLS(LS_KEYS.orders, ORDERS);
+      CART = {}; renderCart(); renderOrders(); document.getElementById('checkoutForm').reset();
+      alert('Order created: ' + order.id);
+    });
+
+    // ---------- Step 7: Orders actions ----------
+    function updateOrderStatus(orderId, status){
+      const o = ORDERS.find(x=>x.id===orderId); if(!o) return; o.status = status; saveToLS(LS_KEYS.orders, ORDERS); renderOrders(); }
+    window.updateOrderStatus = updateOrderStatus;
+
+    function deleteOrder(orderId){ if(!confirm('Delete order '+orderId+'?')) return; ORDERS = ORDERS.filter(o=>o.id!==orderId); saveToLS(LS_KEYS.orders, ORDERS); renderOrders(); }
+    window.deleteOrder = deleteOrder;
+
+    function viewOrder(orderId){ const o = ORDERS.find(x=>x.id===orderId); if(!o) return alert('Order not found');
+      const summary = `Order ${o.id}\nCustomer: ${o.customer.name} (${o.customer.phone})\nAddress: ${o.customer.address}\nItems:\n${o.items.map(i=>`- ${i.name} x${i.qty} @ Rs ${i.price}`).join('\n')}\nTotal: Rs ${o.total}\nStatus: ${o.status}`;
+      alert(summary);
+    }
+    window.viewOrder = viewOrder;
+
+    // ---------- Step 8: Export CSV ----------
+    function exportOrdersCSV(){
+      if(!ORDERS.length){ alert('No orders to export'); return; }
+      const rows = [ ['Order ID','Created','Customer','Phone','Address','Items','Total','Status'] ];
+      ORDERS.forEach(o => {
+        const items = o.items.map(i=>`${i.name} x${i.qty}`).join(' | ');
+        rows.push([o.id, new Date(o.created).toLocaleString(), o.customer.name, o.customer.phone, o.customer.address||'', items, o.total, o.status]);
+      });
+      const csv = rows.map(r => r.map(c => `"${(''+c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'akhrot_orders.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ---------- Step 9: Utility UI bindings ----------
+    el('productSearch').addEventListener('input', e => renderProducts(e.target.value));
+    el('resetProducts').addEventListener('click', e => { el('productSearch').value=''; renderProducts(); });
+    el('orderSearch').addEventListener('input', e => renderOrders(e.target.value, el('statusFilter').value));
+    el('statusFilter').addEventListener('change', e => renderOrders(el('orderSearch').value, e.target.value));
+    el('exportCsv').addEventListener('click', exportOrdersCSV);
+
+    el('seedProducts').addEventListener('click', ()=>{ if(confirm('Add sample products?')){ PRODUCTS = sampleProducts.slice(); saveToLS(LS_KEYS.products, PRODUCTS); renderProducts(); } });
+    el('clearAll').addEventListener('click', ()=>{ if(confirm('Clear ALL data (orders, products, and cart)?')){ localStorage.removeItem(LS_KEYS.orders); localStorage.removeItem(LS_KEYS.products); ORDERS=[]; PRODUCTS = []; CART={}; renderProducts(); renderCart(); renderOrders(); } });
+    el('clearCart').addEventListener('click', ()=>{ if(confirm('Clear cart?')){ CART={}; renderCart(); } });
+
+    // ---------- Step 10: Initialization ----------
+    function init(){ renderProducts(); renderCart(); renderOrders(); }
+    init();
+
+    // Optional: expose some state for debugging in console
+    window.__AKHROT = { PRODUCTS, ORDERS, CART };
+  </script>
+</body>
+</html>

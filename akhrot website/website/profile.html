@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Profile — Akhrot</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root{ --accent:#355e3b; --muted:#6b7280; --bg:#f9f9f6; }
+    body{ margin:0; background:var(--bg); font-family:Inter, system-ui, Arial, sans-serif; color:#111; }
+    header{ /* same header visuals as index (kept simple) */ display:flex; justify-content:space-between; align-items:center; padding:12px 28px; background:white; border-bottom:1px solid #eee; }
+    header img{ height:60px; }
+    main{ max-width:1100px; margin:40px auto; padding:0 18px; display:flex; gap:24px; flex-wrap:wrap; }
+    .card{ background:white; border-radius:10px; padding:20px; box-shadow:0 6px 18px rgba(3,7,18,0.06); border:1px solid #eee; flex:1; min-width:300px; }
+    h1{ color:var(--accent); margin:0 0 8px; font-size:22px; }
+    h2{ color:#5c3d2e; margin-top:0; font-size:18px; }
+    .field{ margin-top:12px; }
+    .label{ font-weight:600; color:#444; font-size:13px; }
+    .value{ margin-top:6px; font-size:15px; color:#222; }
+    .controls{ margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
+    button{ background:var(--accent); border:none; color:white; padding:9px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
+    .btn-secondary{ background:transparent; color:var(--accent); border:1px solid #e6e6e6; }
+    .order-item{ background:#fafafa; border:1px solid #eee; padding:10px; border-radius:8px; margin-bottom:10px; }
+    footer{ margin-top:40px; background:#fff; padding:18px 0; border-top:1px solid #eee; text-align:center; color:#666; }
+    @media (max-width:820px){ main{ flex-direction:column; } }
+  </style>
+</head>
+<body>
+  <!-- Header (same look as index but minimal for profile) -->
+  <header>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <img src="images/logo.png" alt="Akhrot logo">
+      <div style="font-size:13px; color:#355e3b;">We are here to help: 0093209093</div>
+    </div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <a href="cart.html" title="Cart"><img src="images/cart.png" alt="Cart" style="height:28px;"></a>
+    </div>
+  </header>
+
+  <main>
+    <div style="flex-basis:100%;">
+      <h1 id="welcome">Welcome</h1>
+    </div>
+
+    <!-- Profile Card -->
+    <section class="card" aria-labelledby="profileTitle">
+      <h2 id="profileTitle">Profile Information</h2>
+
+      <div class="field">
+        <div class="label">Full name</div>
+        <div id="name" class="value">—</div>
+      </div>
+
+      <div class="field">
+        <div class="label">Email</div>
+        <div id="email" class="value">—</div>
+      </div>
+
+      <div class="field">
+        <div class="label">Phone</div>
+        <div id="phone" class="value">—</div>
+      </div>
+
+      <div class="field">
+        <div class="label">Address</div>
+        <div id="address" class="value">—</div>
+      </div>
+
+      <div class="controls" style="margin-top:18px;">
+        <button id="editBtn">Edit</button>
+        <button id="logoutBtn" class="btn-secondary">Logout</button>
+      </div>
+    </section>
+
+    <!-- Orders Card -->
+    <section class="card" aria-labelledby="ordersTitle">
+      <h2 id="ordersTitle">Order History</h2>
+      <div id="orders">
+        <!-- dynamic -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 Akhrot. All rights reserved.
+  </footer>
+
+  <script>
+/* helper to get token */
+function getToken() {
+  return sessionStorage.getItem('akhrotToken');
+}
+
+/* redirect to login if not authenticated */
+if (!getToken()) {
+  window.location.href = 'login.html';
+}
+
+/* set auth header convenience */
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + getToken()
+  };
+}
+
+/* Load profile */
+async function loadProfile() {
+  try {
+    const res = await fetch('http://localhost:3000/profile', { headers: authHeaders() });
+    if (!res.ok) {
+      // session may be invalid
+      sessionStorage.removeItem('akhrotToken');
+      window.location.href = 'login.html';
+      return;
+    }
+    const profile = await res.json();
+    document.getElementById('welcome').textContent = `Welcome, ${profile.name || 'Customer'} 👋`;
+    document.getElementById('name').textContent = profile.name || '—';
+    document.getElementById('email').textContent = profile.email || '—';
+    document.getElementById('phone').textContent = profile.phone || '—';
+    document.getElementById('address').textContent = profile.address || '—';
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/* Load orders */
+async function loadOrders() {
+  try {
+    const res = await fetch('http://localhost:3000/orders', { headers: authHeaders() });
+    if (!res.ok) {
+      document.getElementById('ordersBody').innerHTML = `<tr><td colspan="5">Unable to load orders</td></tr>`;
+      return;
+    }
+    const list = await res.json();
+    const tbody = document.getElementById('ordersBody');
+    tbody.innerHTML = '';
+    if (!Array.isArray(list) || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:#6b7280;">No recent orders.</td></tr>`;
+      return;
+    }
+    list.forEach(o => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${o.id}</td><td>${o.date}</td><td>PKR ${o.total}</td><td>${o.status}</td>
+                      <td><a href="order.html?order=${encodeURIComponent(o.id)}" style="color:var(--accent); text-decoration:none;">View</a></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/* Update profile (PUT /profile) */
+async function updateProfileAPI(patch) {
+  try {
+    const res = await fetch('http://localhost:3000/profile', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(patch)
+    });
+    if (!res.ok) {
+      const body = await res.json();
+      alert(body.error || 'Update failed');
+      return null;
+    }
+    const { profile } = await res.json();
+    return profile;
+  } catch (err) {
+    console.error(err);
+    alert('Network error');
+    return null;
+  }
+}
+
+/* Edit button (example inline modal/prompt flow) */
+document.getElementById('editBtn').addEventListener('click', async () => {
+  try {
+    // Fetch current profile so prompts prefill
+    const res = await fetch('http://localhost:3000/profile', { headers: authHeaders() });
+    const cur = await res.json();
+
+    const newName = prompt('Full name', cur.name || '');
+    if (newName === null) return;
+    const newPhone = prompt('Phone', cur.phone || '');
+    if (newPhone === null) return;
+    const newAddress = prompt('Address', cur.address || '');
+    if (newAddress === null) return;
+
+    const updated = await updateProfileAPI({ name: newName, phone: newPhone, address: newAddress });
+    if (updated) {
+      // optionally update client-side stored user info
+      sessionStorage.setItem('akhrotUser', JSON.stringify({ id: updated.id, name: updated.name, email: updated.email }));
+      loadProfile();
+      loadOrders();
+      alert('Profile updated.');
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/* Logout */
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.removeItem('akhrotToken');
+  sessionStorage.removeItem('akhrotUser');
+  window.location.href = 'login.html';
+});
+
+/* Proceed to order (blank now) */
+document.getElementById('proceedBtn').addEventListener('click', () => {
+  window.location.href = 'order.html';
+});
+
+/* initialize */
+loadProfile();
+loadOrders();
+</script>

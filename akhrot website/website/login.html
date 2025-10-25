@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Log in — Akhrot</title>
+  <style>
+    :root{ --accent:#355e3b; --muted:#6b7280; --bg:#f9f9f6; }
+    body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); font-family:Inter, system-ui, Arial, sans-serif; padding:20px; color:#111; }
+    .box{ width:100%; max-width:420px; background:white; padding:28px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.08); }
+    .logo{ display:block; margin:0 auto 18px; width:92px; height:92px; object-fit:contain; }
+    h1{ text-align:center; color:var(--accent); margin:0 0 8px; font-size:20px; }
+    p.lead{ text-align:center; color:var(--muted); margin:0 0 18px; }
+    label{ display:block; margin-top:12px; color:#333; font-weight:600; font-size:13px; }
+    input{ width:100%; padding:10px 12px; margin-top:8px; border:1px solid #e6e6e6; border-radius:8px; font-size:14px; }
+    .btn{ width:100%; margin-top:18px; background:var(--accent); color:#fff; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:700; }
+    .muted{ color:var(--muted); font-size:13px; margin-top:12px; text-align:center; }
+    .error{ color:#a83232; font-size:13px; margin-top:8px; text-align:center;}
+  </style>
+</head>
+<body>
+  <div class="box">
+   <a href="index.html">
+  <img src="images/logo.png" alt="Akhrot Logo" class="logo"  style="height: 70px;">
+</a>
+    <h1>Welcome back</h1>
+    <p class="lead">Log in to access your profile and orders</p>
+
+    <div id="msg" style="text-align:center;color:#2f6b2f; font-size:14px; margin-bottom:8px;">
+      <!-- optional signup success -->
+    </div>
+
+    <form id="loginForm" onsubmit="return login(event)">
+      <label for="email">Email</label>
+      <input id="email" type="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" required>
+
+      <div id="err" class="error" role="alert" aria-live="polite"></div>
+
+      <button class="btn" type="submit">Log in</button>
+    </form>
+
+    <p class="muted">New to Akhrot? <a href="signup.html" style="color:var(--accent); text-decoration:none;">Create an account</a></p>
+  </div>
+
+  <script>
+async function login(e){
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const err = document.getElementById('err');
+  err.textContent = '';
+
+  try {
+    const res = await fetch('http://localhost:3000/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!res.ok) {
+      const body = await res.json();
+      err.textContent = body.error || 'Login failed';
+      return false;
+    }
+
+    const { token, user } = await res.json();
+    // Save token in sessionStorage for this session
+    sessionStorage.setItem('akhrotToken', token);
+    sessionStorage.setItem('akhrotUser', JSON.stringify(user));
+    window.location.href = 'profile.html';
+  } catch (err) {
+    err.textContent = 'Network error';
+    console.error(err);
+  }
+  return false;
+}
+</script>
+</body>
+</html>

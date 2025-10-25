@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Akhrot | Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Inter, system-ui, Arial;
+      background: #f9f9f6;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #355e3b;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .filters {
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    input, select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #f1f1f1;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .status {
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .pending {
+      background: #fff4e5;
+      color: #b57500;
+    }
+
+    .confirmed {
+      background: #e6f1ff;
+      color: #004ea8;
+    }
+
+    .delivered {
+      background: #e7f8ec;
+      color: #176a2e;
+    }
+
+    .action-btn {
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-right: 4px;
+      font-size: 13px;
+    }
+
+    .confirm { background: #004ea8; color: white; }
+    .delivered { background: #176a2e; color: white; }
+    .delete { background: #a83232; color: white; }
+
+    #noOrders {
+      text-align: center;
+      color: #888;
+      margin-top: 20px;
+    }
+
+    /* Modal (view details) */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background: #fff;
+      margin: 8% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    /* Edit popup styles (added) */
+    .popup {
+      display: none;
+      position: fixed;
+      z-index: 1100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-content {
+      background: #fff;
+      padding: 18px;
+      border-radius: 10px;
+      width: 320px;
+      max-width: 90%;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .popup-content h3 {
+      margin-top: 0;
+    }
+
+    .popup-content label {
+      display:block; margin-top:8px; font-weight:600; font-size:13px;
+    }
+
+    .popup-content input {
+      width:100%;
+      padding:8px;
+      border-radius:6px;
+      border:1px solid #ccc;
+      margin-top:6px;
+      box-sizing:border-box;
+    }
+
+    .popup-buttons {
+      display:flex;
+      justify-content:space-between;
+      margin-top:12px;
+    }
+
+    .save-btn { background:#4caf50; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+    .cancel-btn { background:#f44336; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Akhrot Admin Dashboard</h1>
+    <a href="index.html">← Back to Store</a>
+  </header>
+
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search orders..." />
+    <select id="statusFilter">
+      <option>All</option>
+      <option>Pending</option>
+      <option>Confirmed</option>
+      <option>Delivered</option>
+    </select>
+  </div>
+
+  <div class="admin-tools" style="margin-bottom: 20px;">
+    <button id="exportBtn" class="action-btn" style="background:#355e3b;color:white;">📤 Export Orders</button>
+    <button id="clearBtn" class="action-btn" style="background:#a83232;color:white;">🗑️ Delete All Orders</button>
+  </div>
+
+<table id="ordersTable">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Customer</th>
+      <th>Product</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>Total</th>
+      <th>Date</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+
+  <p id="noOrders">No orders available yet.</p>
+
+  <!-- ========== ORDER DETAILS MODAL ========== -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close">&times;</span>
+      <h2>Order Details</h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Edit Order Popup -->
+  <div id="editPopup" class="popup" aria-hidden="true">
+    <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <h3 id="editTitle">Edit Order</h3>
+      <form id="editOrderForm">
+        <label for="editName">Customer Name</label>
+        <input type="text" id="editName" required>
+
+        <label for="editProduct">Product</label>
+        <input type="text" id="editProduct" required>
+
+        <label for="editQty">Quantity</label>
+        <input type="number" id="editQty" required>
+
+        <label for="editTotal">Total</label>
+        <input type="number" id="editTotal" required>
+
+        <label for="editPrice">Price (Rs.):</label>
+        <input type="number" id="editPrice" required>
+
+
+        <div class="popup-buttons">
+          <button type="submit" class="save-btn">Save</button>
+          <button type="button" class="cancel-btn" id="cancelEdit">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

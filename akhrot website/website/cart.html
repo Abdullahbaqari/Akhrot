@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Cart - Akhrot</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ---------- Base ---------- */
+    :root{
+      --brown:#5c3d2e;
+      --green:#285c34;
+      --accent:#2596be;
+      --success:#2ecc71;
+    }
+    body{font-family: 'Poppins', sans-serif; background:#fafafa; margin:0; color:#222;}
+
+    /* ---------- Header ---------- */
+    header{
+      background:#fff;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:14px 22px;
+      border-bottom:1px solid #eee;
+      gap:8px;
+    }
+    header .left {display:flex; align-items:center; gap:12px;}
+    header img.logo{height:66px;}
+    header .icons img{width:28px; opacity:.95;}
+
+    /* ---------- Container ---------- */
+    .container{max-width:1000px; margin:36px auto; background:#fff; padding:18px; border-radius:12px; box-shadow:0 6px 22px rgba(0,0,0,.06);}
+
+    h1{text-align:center; color:var(--green); margin:6px 0 18px 0;}
+
+    table{width:100%; border-collapse:collapse; margin-bottom:6px;}
+    th, td{padding:12px 10px; text-align:left; border-bottom:1px solid #eee; vertical-align:middle;}
+    th{background:#fafafa; color:#444; font-weight:600;}
+
+    td img.product-thumb{width:76px; height:76px; object-fit:cover; border-radius:8px; margin-right:12px; vertical-align:middle;}
+
+    .qty-input{width:70px;padding:8px;border-radius:6px;border:1px solid #ddd;}
+    .remove-btn{display:inline-flex; align-items:center; gap:8px; padding:6px 8px; background:#fff;border:0;color:#d32f2f; cursor:pointer; border-radius:6px; font-weight:600;}
+    .remove-btn svg{width:16px;height:16px; fill:#d32f2f;}
+    .remove-btn:hover{background:#fff5f5; box-shadow:0 2px 6px rgba(211,47,47,.06);}
+
+    /* ---------- Cart summary & layout ---------- */
+    .cart-summary-container{display:flex; gap:24px; flex-wrap:wrap; justify-content:center; margin:28px auto; max-width:1000px; padding:0 10px 60px 10px;}
+    .summary, .coupon-box{background:#fff;border-radius:12px;padding:20px;border:1px solid #efecec; box-shadow:0 6px 18px rgba(0,0,0,.04); flex:1 1 320px;}
+    .summary h3{color:var(--green); margin:0 0 12px 0;}
+    .summary-row{display:flex;justify-content:space-between; margin:10px 0; color:#333;}
+    .summary-row.total{font-weight:700; font-size:1.15rem; border-top:1px dashed #eee; padding-top:12px; margin-top:12px;}
+    .checkout-full{width:100%; margin-top:12px; padding:12px; background:var(--accent); color:#fff; border-radius:10px;border:0; font-size:15px; cursor:pointer;}
+    .checkout-full:hover{background:#1b7f9a;}
+
+    /* ---------- Checkout modal ---------- */
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1200; align-items:center; justify-content:center; padding:20px; }
+    .modal-inner{background:#fff; width:100%; max-width:760px; border-radius:12px; overflow:hidden; box-shadow:0 30px 60px rgba(0,0,0,.25); max-height:92vh; display:flex; flex-direction:column;}
+    .modal-header{display:flex;align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-bottom:1px solid #eee;}
+    .modal-body{padding:18px; overflow:auto;}
+    .modal-grid{display:grid; grid-template-columns:1fr 360px; gap:18px;}
+    @media (max-width:900px){ .modal-grid{grid-template-columns:1fr; } .modal-inner{max-width:680px;} }
+
+    .profile-link{font-size:14px; color:var(--brown); text-decoration:none; border:1px solid #eee; padding:8px 10px; border-radius:8px;}
+    .close-x{background:#eee;border:0;padding:8px 10px;border-radius:8px; cursor:pointer;}
+
+    /* ---------- Form ---------- */
+    .form-row{margin-bottom:12px;}
+    label{display:block;font-weight:600;margin-bottom:6px;color:#333;}
+    input[type="text"], input[type="email"], input[type="tel"], select{width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;}
+    .small-note{font-size:13px;color:#666;margin-top:6px;}
+    .checkbox-row{display:flex; gap:10px; align-items:center; margin-top:8px; font-size:14px;}
+
+    /* ---------- success popup ---------- */
+    .success-notice{position:fixed; left:50%; top:18px; transform:translateX(-50%); background:var(--green); color:#fff; padding:12px 18px; border-radius:10px; box-shadow:0 8px 20px rgba(40,92,52,.18); display:none; z-index:1300; align-items:center; gap:10px;}
+
+    /* ---------- small tweaks ---------- */
+    .muted{color:#666; font-size:13px;}
+    @media (max-width:480px){
+      td img.product-thumb{width:56px;height:56px;}
+      .qty-input{width:56px;}
+      .modal-grid{gap:12px;}
+    }
+
+    /* success-popup (modal) styles used by the OK popup */
+    .success-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .popup-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px 40px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: fadeIn 0.3s ease-in-out;
+      max-width: 350px;
+      width: 90%;
+    }
+    .popup-icon { font-size: 40px; margin-bottom: 10px; }
+    .popup-content h3 { margin: 10px 0; font-size: 22px; color: #222; }
+    .popup-content p { color: #555; font-size: 15px; margin-bottom: 20px; }
+    .popup-btn {
+      background-color: #28a745; color: white; border: none; padding: 10px 25px;
+      border-radius: 8px; cursor: pointer; font-size: 15px; transition: background-color 0.2s ease;
+    }
+    .popup-btn:hover { background-color: #218838; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+  </style>
+</head>
+<body>
+
+  <!-- Header-->
+   <header>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="index.html">
+        <img src="images/logo.png" alt="Akhrot Logo" class="logo" style="height:70px;">
+      </a>
+      <span style="font-size:14px; color:#355e3b;">We are here to help: 0093209093</span>
+    </div>
+
+    <div style="display:flex; gap:18px; align-items:center;">
+      <a href="profile.html" class="icon-link" title="Profile">
+        <img src="images/profile.png" alt="Profile">
+      </a>
+      <a href="cart.html" class="icon-link" title="Cart" style="position:relative;">
+        <img src="images/cart.png" alt="Cart">
+        <span id="cart-count"
+              style="position:absolute; top:-5px; right:-8px; background:#ff4c4c; color:white; font-size:12px; padding:2px 6px; border-radius:50%; display:none;">
+          0
+        </span>
+      </a>
+    </div>
+  </header>
+  <!-- Cart items -->
+  <div class="container" aria-live="polite">
+    <h1>Your Shopping Cart</h1>
+    <div id="cartTableContainer"></div>
+  </div>
+
+  <!-- Summary & order -->
+  <div class="cart-summary-container" role="region" aria-label="Order summary">
+    <div class="summary" id="orderSummary">
+      <h3>Order Summary</h3>
+      <div class="summary-row"><span>Subtotal</span><span id="subtotalText">Rs. 0</span></div>
+      <div class="summary-row"><span>Shipping</span><span id="shippingText">Rs. 0</span></div>
+      <div class="summary-row"><span>Tax (5%)</span><span id="taxText">Rs. 0</span></div>
+      <div class="summary-row"><span>Discount</span><span id="discountText">Rs. 0</span></div>
+      <div class="summary-row total"><span>Total</span><span id="totalText">Rs. 0</span></div>
+      <button class="checkout-full" id="proceedCheckoutBtn">Proceed to Checkout</button>
+      <button class="checkout-full" id="clearCartBtn" style="background:#d9534f;margin-top:10px;">Clear Cart</button>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div class="modal" id="checkoutModal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <a class="profile-link" href="profile.html">My Profile</a>
+          <strong id="checkoutTitle" style="font-size:16px; color:var(--brown)">Checkout</strong>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="close-x" id="closeModalBtn">Close</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-grid">
+          <!-- Left: Contact & Delivery -->
+          <div>
+            <h4 style="margin:0 0 12px 0; color:var(--green)">Contact</h4>
+
+            <div class="form-row">
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="Enter an email" required>
+            </div>
+
+            <div class="checkbox-row">
+              <input id="emailOffers" type="checkbox">
+              <label for="emailOffers" class="muted">Email me with news and offers</label>
+            </div>
+
+            <h4 style="margin-top:18px; color:var(--green)">Delivery Address</h4>
+
+            <div class="form-row">
+              <label for="country">Country</label>
+              <select id="country"><option>Pakistan</option></select>
+            </div>
+
+            <div class="form-row">
+              <label for="citySelect">City</label>
+              <select id="citySelect" required>
+                <option value="">Please select city</option>
+                <option>Lahore</option><option>Karachi</option><option>Islamabad</option><option>Rawalpindi</option>
+                <option>Sukkur</option><option>Kasur</option><option>Sheikhupura</option><option>Peshawar</option>
+                <option>Quetta</option><option>Hyderabad</option><option>Sahiwal</option><option>Multan</option>
+                <option>Sargodha</option><option>Sialkot</option><option>Gujranwala</option><option>Jhelum</option>
+                <option>Mirpur (ajk)</option><option>Abbottabad</option><option>Bahawalpur</option><option>Faisalabad</option>
+                <option>Dera Ismail Khan</option><option>Gwadar</option><option>Turbat</option><option>Dera Ghazi Khan</option>
+                <option>Hafizabad</option><option>Mandi Bahauddin</option><option>Phool Nagar</option><option>Rahim Yar Khan</option>
+                <option>Okara</option><option>Sadiqabad</option><option>Mianwali</option><option>Layyah</option><option>Depalpur</option>
+                <option>Toba Tek Singh</option><option>Vehari</option><option>Lala Musa</option><option>Kohat</option><option>Bagh(ajk)</option>
+                <option>Gujrat</option><option>Kot Addu</option><option>Hassan Abda</option><option>Attock</option><option>Wah Cantt</option>
+                <option>Gilgit</option><option>Skardu</option><option>Khaplu</option><option>Jaranwala</option><option>Bahawalnagar</option>
+                <option>Fort Abbas</option><option>Mian Channu</option><option>Gojra</option><option>Gujar Khan</option>
+              </select>
+              <div class="small-note muted">This will also be used as your billing address.</div>
+            </div>
+
+            <div class="form-row">
+              <label for="firstName">First name</label>
+              <input id="firstName" type="text" placeholder="Enter first name" required>
+            </div>
+
+            <div class="form-row">
+              <label for="lastName">Last name</label>
+              <input id="lastName" type="text" placeholder="Enter last name" required>
+            </div>
+
+            <div class="form-row">
+              <label for="address">Address</label>
+              <input id="address" type="text" placeholder="Enter an address"  required>
+            </div>
+
+            <div class="form-row">
+              <label for="postal">Postal code (optional)</label>
+              <input id="postal" type="text" placeholder="Postal code">
+            </div>
+
+            <div class="form-row">
+              <label for="phone">WhatsApp Number (required)</label>
+              <input id="phone" type="tel" placeholder="Enter phone number" required>
+            </div>
+
+
+          </div>
+
+          <!-- Right: Shipping & Order summary inside modal -->
+          <div>
+            <h4 style="color:var(--green)">Shipping method</h4>
+            <div style="padding:12px; border:1px solid #eee; border-radius:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <strong>Standard Shipping</strong>
+                  <div class="muted" style="font-size:13px;">Delivery in 3–7 business days</div>
+                </div>
+                <div id="modalShippingPrice" style="font-weight:700;">Rs. 0</div>
+              </div>
+            </div>
+
+            <h4 style="margin-top:16px; color:var(--green)">Order summary</h4>
+            <div style="border:1px solid #f2f2f2; padding:12px; border-radius:8px;">
+              <div class="summary-row"><span>Subtotal</span><span id="modalSubtotal">Rs. 0</span></div>
+              <div class="summary-row"><span>Shipping</span><span id="modalShipping">Rs. 0</span></div>
+              <div class="summary-row"><span>Tax (5%)</span><span id="modalTax">Rs. 0</span></div>
+              <div class="summary-row"><span>Discount</span><span id="modalDiscount">Rs. 0</span></div>
+              <div class="summary-row total"><span>Total</span><span id="modalTotal">Rs. 0</span></div>
+            </div>
+
+            <div style="margin-top:14px;">
+              <div class="small-note muted">After placing your order, our team will contact you on WhatsApp to complete a secure payment via Easypaisa or JazzCash</div>
+              <button id="completeOrderBtn" class="checkout-full" style="margin-top:12px; background:var(--green);">Complete order</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ========= CONFIG ========= */
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5TKXuov9VorM8M8qj9IMdz1WPkypyyHLL5EdB8662VvKBDwpguFWRMxyRWbhp-pDgIA/exec";
+
+const SHIPPING_COST_DEFAULT = 199;
+const TAX_RATE = 0.05;
+const DISCOUNT_IF_OVER = 500;
+const FREE_SHIPPING_THRESHOLD = 10000;
+const DISCOUNT_THRESHOLD = 10000;
+
+/* ========= UTIL ========= */
+function formatRs(n){ return 'Rs. ' + Number(n).toFixed(0); }
+function showSuccess(msg){
+  const s = document.getElementById('successNotice');
+  document.getElementById('successText').textContent = msg || 'We received your order. We’ll confirm shortly.';
+  s.style.display = 'flex';
+  setTimeout(()=> s.style.display = 'none', 4200);
+}
+
+/* ========= CART RENDERING ========= */
+function renderCartTable(){
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  const container = document.getElementById('cartTableContainer');
+  if(!cart.length){
+    container.innerHTML = '<p class="muted" style="text-align:center; padding:40px 0;">Your cart is empty 🛒</p>';
+    updateSummaries();
+    return;
+  }
+  let html = `<table aria-describedby="cart items"><thead><tr><th>Product</th><th>Price</th><th>Quantity</th><th>Total</th><th></th></tr></thead><tbody>`;
+  cart.forEach((it, idx)=>{
+    const total = (it.price * it.quantity);
+    html += `<tr data-idx="${idx}">
+      <td><img class="product-thumb" src="${it.image||'images/default.jpg'}" alt="${it.name}"> ${it.name}</td>
+      <td>${formatRs(it.price)}</td>
+      <td><input class="qty-input" type="number" min="1" value="${it.quantity}" onchange="onQtyChange(${idx}, this.value)"></td>
+      <td id="rowTotal${idx}">${formatRs(total)}</td>
+      <td style="text-align:right;">
+        <button class="remove-btn" onclick="removeItem(${idx})" aria-label="Remove ${it.name}">
+          <!-- trash SVG -->
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 3h6l1 1h4v2H2V4h4l1-1zM6 7h12l-1 12a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7z" /></svg>
+          Remove
+        </button>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+  updateSummaries();
+}
+
+/* quantity change */
+function onQtyChange(index, newVal){
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  newVal = parseInt(newVal) || 1;
+  cart[index].quantity = newVal;
+  localStorage.setItem('cart', JSON.stringify(cart));
+  renderCartTable();
+}
+function removeItem(index){
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  cart.splice(index, 1);
+  localStorage.setItem('cart', JSON.stringify(cart));
+  renderCartTable();
+}
+
+/* clear cart */
+document.getElementById('clearCartBtn').addEventListener('click', ()=>{
+  if(confirm('Clear all items from cart?')){
+    localStorage.removeItem('cart');
+    renderCartTable();
+  }
+});
+
+/* ========= SUMMARY CALCS ========= */
+function computeSummary(){
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  let subtotal = 0;
+  cart.forEach(it=> subtotal += it.price * it.quantity);
+  let shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST_DEFAULT;
+  let discount = subtotal >= DISCOUNT_THRESHOLD ? DISCOUNT_IF_OVER : 0;
+  let tax = subtotal * TAX_RATE;
+  let total = subtotal + shipping + tax - discount;
+  return { subtotal, shipping, discount, tax, total };
+}
+function updateSummaries(){
+  const s = computeSummary();
+  document.getElementById('subtotalText').textContent = formatRs(s.subtotal);
+  document.getElementById('shippingText').textContent = s.shipping === 0 ? 'Free' : formatRs(s.shipping);
+  document.getElementById('taxText').textContent = formatRs(s.tax);
+  document.getElementById('discountText').textContent = formatRs(s.discount);
+  document.getElementById('totalText').textContent = formatRs(s.total);
+
+  // modal copy
+  document.getElementById('modalSubtotal').textContent = formatRs(s.subtotal);
+  document.getElementById('modalShipping').textContent = s.shipping === 0 ? 'Free' : formatRs(s.shipping);
+  document.getElementById('modalTax').textContent = formatRs(s.tax);
+  document.getElementById('modalDiscount').textContent = formatRs(s.discount);
+  document.getElementById('modalTotal').textContent = formatRs(s.total);
+  document.getElementById('modalShippingPrice').textContent = s.shipping === 0 ? 'Free' : formatRs(s.shipping);
+}
+
+/* ========= Checkout modal behavior ========= */
+const checkoutModal = document.getElementById('checkoutModal');
+document.getElementById('proceedCheckoutBtn').addEventListener('click', ()=>{
+  // If cart empty, inform user
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  if(cart.length === 0){ alert('Your cart is empty. Add products before proceeding.'); return; }
+
+  // Do NOT prefill or load saved personal info (we do not store it)
+  updateSummaries();
+  checkoutModal.style.display = 'flex';
+});
+document.getElementById('closeModalBtn').addEventListener('click', ()=> checkoutModal.style.display = 'none');
+window.addEventListener('click', (e)=> { if(e.target === checkoutModal) checkoutModal.style.display = 'none'; });
+
+document.addEventListener('DOMContentLoaded', function(){
+    renderCartTable();
+  });
+</script>
+
+
+
+<!-- /* ========= Complete Order: validate, send to Google Sheet, clear cart, popup ========= */-->
+<div id="successPopup" class="success-popup" role="status" aria-live="polite" style="display:none;">
+  <div class="popup-content">
+    <div class="popup-icon">✅</div>
+    <h3>Order Completed!</h3>
+    <p>Your order has been successfully placed. We’ll confirm via WhatsApp shortly.</p>
+    <button id="popupOkBtn" class="popup-btn">OK</button>
+  </div>
+</div>
+
+<style>
+  .success-popup {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 25px 35px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    max-width: 400px;
+  }
+  .popup-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+  }
+  .popup-btn {
+    margin-top: 15px;
+    padding: 8px 18px;
+    background: #2ecc71;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .popup-btn:hover {
+    background: #27ae60;
+  }
+</style>
+
+<script>
+document.getElementById('completeOrderBtn').addEventListener('click', async () => {
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  if (!cart.length) return alert('Your cart is empty!');
+
+  // Collect form data
+  const order = {
+    timestamp: new Date().toLocaleString(),
+    firstName: document.getElementById('firstName').value.trim(),
+    lastName: document.getElementById('lastName').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    address: document.getElementById('address').value.trim(),
+    city: document.getElementById('citySelect').value,
+    postal: document.getElementById('postal').value.trim(),
+    country: document.getElementById('country').value,
+    subtotal: document.getElementById('subtotalText').textContent,
+    shipping: document.getElementById('shippingText').textContent,
+    tax: document.getElementById('taxText').textContent,
+    discount: document.getElementById('discountText').textContent,
+    total: document.getElementById('totalText').textContent,
+    items: cart.map(i => `${i.name} (x${i.quantity}) - Rs.${i.price * i.quantity}`).join(', ')
+  };
+
+  try {
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbzToK8EFYBOZ8YYQyu5yB3dPBOwIs0-P1LwbVkvMj0GgPCqU_BWuVn9A-2cvFXodhrneg/exec",
+      {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(order).toString()
+      }
+    );
+
+    // Local backup
+    const orders = JSON.parse(localStorage.getItem('orders')) || [];
+    orders.push(order);
+    localStorage.setItem('orders', JSON.stringify(orders));
+
+    // Clear cart and refresh UI
+    localStorage.removeItem('cart');
+    renderCartTable();
+
+    // Show popup
+    const popup = document.getElementById('successPopup');
+    popup.style.display = 'flex';
+
+  } catch (err) {
+    alert('Failed to send order to Google Sheet. Please check your script URL.');
+    console.error(err);
+  }
+});
+
+// OK button closes popup
+document.addEventListener('click', function (e) {
+  if (e.target && e.target.id === 'popupOkBtn') {
+    const popup = document.getElementById('successPopup');
+    popup.style.display = 'none';
+  }
+});
+
+</script>
+</body>
+</html>

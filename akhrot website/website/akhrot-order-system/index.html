@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Akhrot | Place Your Order</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Akhrot – Place Your Order</h1>
+    <p>Fresh from Gilgit-Baltistan, delivered to your doorstep</p>
+  </header>
+
+  <section class="order-form">
+    <h2>Order Form</h2>
+    <form id="orderForm">
+      <label>Full Name</label>
+      <input type="text" id="customerName" placeholder="Enter your name" required />
+
+      <label>Phone Number</label>
+      <input type="tel" id="customerPhone" placeholder="03XX-XXXXXXX" required />
+
+      <label>Address</label>
+      <textarea id="customerAddress" placeholder="Enter delivery address" required></textarea>
+      <label for="price">Price (Rs.):</label>
+<input type="number" id="price" placeholder="Enter product price" required>
+
+
+      <label>Select Product</label>
+      <select id="product" required>
+        <option value="">-- Choose Product --</option>
+        <option value="Dry Apricot">Dry Apricot</option>
+        <option value="Walnut">Walnut</option>
+        <option value="Almond">Almond</option>
+        <option value="Apple Jam">Apple Jam</option>
+        <option value="Apricot Jam">Apricot Jam</option>
+      </select>
+
+      <label>Quantity (in jars or kg)</label>
+      <input type="number" id="quantity" min="1" placeholder="Enter quantity" required />
+
+      <button type="submit">Place Order</button>
+    </form>
+
+    <p id="confirmationMessage"></p>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
